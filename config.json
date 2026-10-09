@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "cooldown_seconds": 600,
+  "daily_model_calls": 500,
+  "max_context_chars": 4000,
+  "max_title_chars": 60,
+  "model_timeout_seconds": 90,
+  "timezone": "Asia/Shanghai",
+  "project_patterns": {},
+  "topic_patterns": {},
+  "reevaluate_after_messages": 10
+}
