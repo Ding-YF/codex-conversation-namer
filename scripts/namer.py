@@ -18,7 +18,7 @@ import threading
 import time
 from zoneinfo import ZoneInfo
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 CODEX = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
 # Optional project aliases belong in config.json, not in shared source code.
@@ -48,7 +48,7 @@ subject 用短语描述具体问题或交付物，保留有助于检索的关键
 
 
 def config():
-    return json.loads((ROOT / "config.json").read_text())
+    return json.loads((ROOT / "config/config.json").read_text())
 
 
 def db():
@@ -441,10 +441,10 @@ def main():
     if args.command in ["enable", "disable"]:
         cfg = config()
         cfg["enabled"] = args.command == "enable"
-        temp = ROOT / "config.json.tmp"
+        temp = ROOT / "config/config.json.tmp"
         temp.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
         temp.chmod(0o600)
-        temp.replace(ROOT / "config.json")
+        temp.replace(ROOT / "config/config.json")
         print("enabled=true: 将按需向当前Codex模型提供方发送有限对话摘录并自动修改标题；Hook还须在 /hooks 信任。"
               if cfg["enabled"] else "enabled=false: 已停止自动命名。")
         return 0
@@ -455,7 +455,7 @@ def main():
             found = []
             for group in result.get("data", []):
                 for h in group.get("hooks", []):
-                    if str(ROOT / "namer.py") in h.get("command", ""):
+                    if str(ROOT / "scripts/namer.py") in h.get("command", ""):
                         found.append({k: h.get(k) for k in ["enabled", "trustStatus", "eventName", "sourcePath"]})
             ready = config()["enabled"] and any(h.get("enabled") and h.get("trustStatus") == "trusted" for h in found)
             print(json.dumps({"naming_enabled": config()["enabled"], "hooks": found, "ready": ready,

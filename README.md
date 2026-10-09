@@ -34,8 +34,8 @@ ExampleApp｜文档维护｜补充安装与配置说明｜2026-01-16
 下载或复制源码后，在源码目录执行：
 
 ```bash
-python3 install.py --check
-python3 install.py
+python3 scripts/install.py --check
+python3 scripts/install.py
 ```
 
 安装器会检查所需命名接口，复制程序并注册 Stop Hook；已有 Hook 会保留并备份。全新安装默认停用，升级保留已有配置。
@@ -46,7 +46,7 @@ python3 install.py
 
 ```bash
 cd ~/.local/share/codex-conversation-namer
-python3 namer.py enable
+python3 scripts/namer.py enable
 ```
 
 > 启用后，工具会按需向当前模型提供方发送有限的会话摘录，并自动修改标题。模型调用可能产生费用。
@@ -56,7 +56,7 @@ python3 namer.py enable
 在 Codex CLI 中输入 `/hooks`，审核并信任自动命名 Stop Hook，然后重新打开会话。使用 IDE 时，可在 CLI 完成审核后重新加载 IDE。
 
 ```bash
-python3 namer.py doctor
+python3 scripts/namer.py doctor
 ```
 
 返回 `ready: true` 表示功能已开启，且 Hook 已注册、启用并受信任。之后正常使用 Codex 即可；标题是否更新取决于内容变化、冷却时间和调用额度。
@@ -65,7 +65,7 @@ python3 namer.py doctor
 <summary>自定义安装路径与环境变量</summary>
 
 ```bash
-python3 install.py --install-dir "$HOME/tools/conversation-namer" --codex-home "$HOME/.codex"
+python3 scripts/install.py --install-dir "$HOME/tools/conversation-namer" --codex-home "$HOME/.codex"
 ```
 
 安装器读取 `XDG_DATA_HOME`、`CODEX_HOME` 和当前 Python 解释器位置，生成适用于目标电脑的 Hook 命令。默认安装目录为 `${XDG_DATA_HOME:-$HOME/.local/share}/codex-conversation-namer`。
@@ -80,19 +80,19 @@ python3 install.py --install-dir "$HOME/tools/conversation-namer" --codex-home "
 
 | 操作 | 命令 |
 | --- | --- |
-| 查看配置、会话数量和近期调用 | `python3 namer.py status` |
-| 搜索本工具记录的会话 | `python3 namer.py search --query 文档` |
-| 检查开关与 Hook 状态 | `python3 namer.py doctor` |
-| 停用自动命名 | `python3 namer.py disable` |
-| 重新启用 | `python3 namer.py enable` |
-| 恢复已记录的原标题，并锁定自动修改 | `python3 namer.py restore --thread 会话ID` |
-| 解除指定会话的锁定 | `python3 namer.py unlock --thread 会话ID` |
+| 查看配置、会话数量和近期调用 | `python3 scripts/namer.py status` |
+| 搜索本工具记录的会话 | `python3 scripts/namer.py search --query 文档` |
+| 检查开关与 Hook 状态 | `python3 scripts/namer.py doctor` |
+| 停用自动命名 | `python3 scripts/namer.py disable` |
+| 重新启用 | `python3 scripts/namer.py enable` |
+| 恢复已记录的原标题，并锁定自动修改 | `python3 scripts/namer.py restore --thread 会话ID` |
+| 解除指定会话的锁定 | `python3 scripts/namer.py unlock --thread 会话ID` |
 
 `会话ID` 替换为实际 ID，可从搜索结果获取。恢复标题需要本工具留有该会话的原标题记录。
 
 ## 配置
 
-编辑安装目录中的 [`config.json`](config.json)。下表列出全新安装的默认值；升级时保留现有开关和设置。旧配置未包含新增评估阈值时，也会使用下表默认值。消息数阈值请设为正整数。
+编辑安装目录中的 [`config/config.json`](config/config.json)。下表列出全新安装的默认值；升级时保留现有开关和设置。旧配置未包含新增评估阈值时，也会使用下表默认值。消息数阈值请设为正整数。
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -107,7 +107,7 @@ python3 install.py --install-dir "$HOME/tools/conversation-namer" --codex-home "
 | `project_patterns` | `{}` | 项目名称与匹配正则表达式 |
 | `topic_patterns` | `{}` | 额外主题与匹配正则表达式 |
 
-如需调整每日调用上限，修改安装目录中 `config.json` 的 `daily_model_calls` 字段，默认值为 `500`。该上限由所有会话共享，配置在下一次 Hook 调用时读取。
+如需调整每日调用上限，修改安装目录中 `config/config.json` 的 `daily_model_calls` 字段，默认值为 `500`。该上限由所有会话共享，配置在下一次 Hook 调用时读取。
 
 ### 添加项目与主题
 
@@ -181,7 +181,7 @@ python3 install.py --install-dir "$HOME/tools/conversation-namer" --codex-home "
 
 **为什么标题没有更新？**
 
-先运行 `python3 namer.py doctor` 检查开关和 Hook 信任状态，再用 `python3 namer.py status` 查看近期调用和 `recent_events`。
+先运行 `python3 scripts/namer.py doctor` 检查开关和 Hook 信任状态，再用 `python3 scripts/namer.py status` 查看近期调用和 `recent_events`。
 
 | 事件或原因 | 含义 |
 | --- | --- |
@@ -194,7 +194,7 @@ python3 install.py --install-dir "$HOME/tools/conversation-namer" --codex-home "
 
 没有 `hook_received` 时，检查客户端是否重新加载并信任了此 Hook。`doctor` 的 `ready: true` 仅说明配置与信任就绪，不能证明客户端实际发出过 Stop，也不验证模型网络。源码配置不要覆盖已经启用的运行配置。
 
-程序无法启动时，可用 `python3 -m py_compile namer.py` 检查语法；安装器也会在写入前检查 Python 文件语法。
+程序无法启动时，可用 `python3 -m py_compile scripts/namer.py` 检查语法；安装器也会在写入前检查 Python 文件语法。
 
 **每天 500 次意味着固定费用吗？**
 
@@ -210,14 +210,29 @@ python3 install.py --install-dir "$HOME/tools/conversation-namer" --codex-home "
 
 ## 文件说明
 
+```text
+codex-conversation-namer/
+├── scripts/
+│   ├── namer.py        # 核心命名程序，包含原有逻辑
+│   └── install.py      # 安装与 Hook 注册
+├── tests/
+│   └── test_namer.py   # 原有回归测试
+├── config/
+│   └── config.json     # 开关、调用上限及命名配置
+├── README.md
+└── .gitignore
+```
+
+目录调整只涉及文件位置和路径引用，命名规则保持不变。已有安装升级后需重新运行 `python3 scripts/install.py` 注册新 Hook 路径，并在 Codex `/hooks` 中审核信任。安装器保留已有配置和运行数据。
+
 ### 源码文件
 
 | 文件 | 作用 |
 | --- | --- |
-| [`namer.py`](namer.py) | 会话提取、变化检测、模型调用、标题更新及管理命令 |
-| [`install.py`](install.py) | 环境检查、文件安装、Hook 注册与备份 |
-| [`config.json`](config.json) | 开关、限额、时区及自定义词表 |
-| [`test_namer.py`](test_namer.py) | 使用虚构样例、临时目录和模拟 RPC 的单元测试 |
+| [`scripts/namer.py`](scripts/namer.py) | 会话提取、变化检测、模型调用、标题更新及管理命令 |
+| [`scripts/install.py`](scripts/install.py) | 环境检查、文件安装、Hook 注册与备份 |
+| [`config/config.json`](config/config.json) | 开关、限额、时区及自定义词表 |
+| [`tests/test_namer.py`](tests/test_namer.py) | 使用虚构样例、临时目录和模拟 RPC 的单元测试 |
 | [`README.md`](README.md) | 安装、使用与维护说明 |
 | [`.gitignore`](.gitignore) | 排除运行数据、本机记录、缓存和本地凭据等文件 |
 
@@ -238,16 +253,16 @@ python3 install.py --install-dir "$HOME/tools/conversation-namer" --codex-home "
 当前版本：`1.1.1`。在源码目录运行测试：
 
 ```bash
-python3 test_namer.py
+python3 tests/test_namer.py
 ```
 
-测试覆盖首次命名、第 10 条新增用户消息触发、长消息不会提前触发、冷却与失败重试、额度恢复、标题未变时的进度更新、手动保护、重复轮次，以及安装和 Hook 入口。`install.py --check` 仅检查运行环境与所需命名接口，不等同于完整端到端兼容性验证。
+测试覆盖首次命名、第 10 条新增用户消息触发、长消息不会提前触发、冷却与失败重试、额度恢复、标题未变时的进度更新、手动保护、重复轮次，以及安装和 Hook 入口。`scripts/install.py --check` 仅检查运行环境与所需命名接口，不等同于完整端到端兼容性验证。
 
-发布前，将 `config.json` 恢复为默认配置：`enabled=false`，自定义词表为空。按文件白名单打包：
+发布前，将 `config/config.json` 恢复为默认配置：`enabled=false`，自定义词表为空。按文件白名单打包：
 
 ```bash
 tar -czf codex-conversation-namer-portable.tar.gz \
-  namer.py install.py config.json test_namer.py README.md .gitignore
+  scripts/namer.py scripts/install.py config/config.json tests/test_namer.py README.md .gitignore
 ```
 
 `.gitignore` 不会移除已跟踪的文件，也不会影响手动复制整个目录。发布包应排除运行数据、安装记录、日志、凭据，以及 `.git/`、`.agents/`、`.codex/`、`.aws/` 等本地目录。

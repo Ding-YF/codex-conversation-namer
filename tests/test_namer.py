@@ -5,11 +5,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location("namer", ROOT / "namer.py")
+ROOT = Path(__file__).resolve().parent.parent
+spec = importlib.util.spec_from_file_location("namer", ROOT / "scripts/namer.py")
 n = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(n)
-ispec = importlib.util.spec_from_file_location("namer_install", ROOT / "install.py")
+ispec = importlib.util.spec_from_file_location("namer_install", ROOT / "scripts/install.py")
 installer = importlib.util.module_from_spec(ispec)
 ispec.loader.exec_module(installer)
 
@@ -164,18 +164,18 @@ class Tests(unittest.TestCase):
             first = installer.install(ROOT, target, codex_home, check=False)
             args = shlex.split(first["hook_command"])
             self.assertIn("CODEX_HOME=" + str(codex_home), args)
-            self.assertIn(str(target / "namer.py"), args)
+            self.assertIn(str(target / "scripts/namer.py"), args)
             self.assertFalse((target / "data").exists())
-            cfg = json.loads((target / "config.json").read_text())
+            cfg = json.loads((target / "config/config.json").read_text())
             self.assertFalse(cfg["enabled"])
             cfg["cooldown_seconds"] = 1234
-            (target / "config.json").write_text(json.dumps(cfg))
+            (target / "config/config.json").write_text(json.dumps(cfg))
             second = installer.install(ROOT, target, codex_home, check=False)
             hooks = json.loads((codex_home / "hooks.json").read_text())
             handlers = [h for g in hooks["hooks"]["Stop"] for h in g["hooks"]]
             self.assertIn(unrelated, handlers)
             self.assertEqual(sum(h["command"] == second["hook_command"] for h in handlers), 1)
-            self.assertEqual(json.loads((target / "config.json").read_text())["cooldown_seconds"], 1234)
+            self.assertEqual(json.loads((target / "config/config.json").read_text())["cooldown_seconds"], 1234)
             self.assertTrue(Path(second["hooks_backup"]).exists())
 
     def test_installer_rejects_syntax_error_before_writing(self):
@@ -185,8 +185,9 @@ class Tests(unittest.TestCase):
             source = base / "source"
             source.mkdir()
             for name in installer.FILES:
+                (source / name).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT / name, source / name)
-            (source / "namer.py").write_text("import time accidental words\n")
+            (source / "scripts/namer.py").write_text("import time accidental words\n")
             target, codex_home = base / "target", base / "codex"
             with self.assertRaises(SyntaxError):
                 installer.install(source, target, codex_home, check=False)
@@ -197,11 +198,12 @@ class Tests(unittest.TestCase):
         import contextlib
         import io
         with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "config").mkdir()
             with patch.object(n, "ROOT", Path(directory)), contextlib.redirect_stdout(io.StringIO()):
                 for command, enabled in [("enable", True), ("disable", False)]:
                     with patch.object(n.sys, "argv", ["namer.py", command]):
                         self.assertEqual(n.main(), 0)
-                    cfg=json.loads((Path(directory)/"config.json").read_text())
+                    cfg=json.loads((Path(directory)/"config/config.json").read_text())
                     self.assertEqual(cfg["enabled"],enabled)
 
     def test_doctor_reports_hook_trust(self):
@@ -209,7 +211,7 @@ class Tests(unittest.TestCase):
         import io
         class FakeRpc:
             def request(self, method, params):
-                return {"data":[{"hooks":[{"command":str(ROOT/"namer.py")+" hook", "enabled":True,
+                return {"data":[{"hooks":[{"command":str(ROOT/"scripts/namer.py")+" hook", "enabled":True,
                                             "trustStatus":"trusted","eventName":"stop"}]}]}
             def close(self): pass
         output=io.StringIO()

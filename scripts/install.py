@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 
-FILES = ["namer.py", "install.py", "config.json", "README.md", "test_namer.py"]
+FILES = ["scripts/namer.py", "scripts/install.py", "config/config.json", "README.md", "tests/test_namer.py"]
 
 
 def preflight():
@@ -57,20 +57,23 @@ def install(source, target, codex_home, check=True):
         dest = target / name
         if (source / name).resolve() == dest.resolve():
             continue
+        dest.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         # Updating keeps local settings. A fresh copy is always disabled until
         # the operator chooses to enable real-content inference.
-        if name == "config.json":
+        if name == "config/config.json":
             if dest.exists():
                 continue
-            cfg = json.loads((source / name).read_text())
-            cfg["enabled"] = False
+            legacy_config = target / "config.json"
+            cfg = json.loads((legacy_config if legacy_config.exists() else source / name).read_text())
+            if not legacy_config.exists():
+                cfg["enabled"] = False
             dest.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
         else:
             shutil.copyfile(source / name, dest)
         dest.chmod(0o600)
     # Embed paths discovered on THIS computer, never the source computer.
     command = " ".join(shlex.quote(x) for x in ["env", "CODEX_HOME=" + str(codex_home),
-                                                sys.executable, str(target / "namer.py"), "hook"])
+                                                sys.executable, str(target / "scripts/namer.py"), "hook"])
     handler = {"type": "command", "command": command, "async": True,
                "timeout": 120, "statusMessage": "Checking conversation title"}
     manifest = target / "installation.json"
@@ -115,7 +118,7 @@ def main():
     if args.check:
         print(preflight())
         return
-    result = install(Path(__file__).resolve().parent, args.install_dir, args.codex_home)
+    result = install(Path(__file__).resolve().parent.parent, args.install_dir, args.codex_home)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     print("Installed. Settings preserved; new installs disabled. Review/trust this hook using /hooks.")
 

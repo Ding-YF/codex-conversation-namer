@@ -1,7 +1,7 @@
 # Per-install conversation state and machine-specific paths.
 /data/
 /installation.json
-/config.json.tmp
+/config/config.json.tmp
 
 # Python caches and local environments.
 __pycache__/
